@@ -5,8 +5,8 @@ void Modalysis::compute_histo(int ts, int attribute) {
 	double *vector;
 	double value, minval, maxval;
 
-	double MIN;
-	double MAX;
+	double MIN= 999;
+	double MAX=-999;
 	
 	switch(attribute) {
 		case 1:
@@ -19,21 +19,22 @@ void Modalysis::compute_histo(int ts, int attribute) {
 			break;
 	}
 
-	printf("%d %d %d %d\n", myrank, ts, attribute, nlocal);
- 
-	MIN = MAX = vector[0];
+#ifdef DEBUG
+	printf("%d %d %d %d\n", myrank, ts, attribute, nlocal); 
+#endif
+
+	//MIN = MAX = vector[0];
 	for (int i = 0; i < nlocal; i++) {
-		value = vector[i*PAD+0];
-		if (value < MIN)
-			MIN = value;
-		else if (value > MAX)
-			MAX = value;
+		value = vector[i*PAD+0];	//x-direction
+		if (value <= MIN) MIN = value;
+		else MAX = value;
   }
 
-	MPI_Allreduce(&value, &minval, 1, MPI_DOUBLE, MPI_MIN, comm);
-	MPI_Allreduce(&value, &maxval, 1, MPI_DOUBLE, MPI_MAX, comm);
+	MPI_Allreduce(&MIN, &minval, 1, MPI_DOUBLE, MPI_MIN, comm);
+	MPI_Allreduce(&MAX, &maxval, 1, MPI_DOUBLE, MPI_MAX, comm);
 
-	if (myrank == 0) printf("%d %d: Min %lf Max %lf\n", ts, attribute, minval, maxval);
+	if (myrank == 0) 
+		printf("%d %d: Min %lf Max %lf\n", ts, attribute, minval, maxval);
 	
 	return;
 

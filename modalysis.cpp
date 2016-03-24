@@ -114,24 +114,19 @@ void Modalysis::readFile() {
 		mpifo = offset * 3 * sizeof(double);
 
 		int numelem = 3*nlocal;
-		//printf("%d: %d: reading %d elements %lld %lld %lld at %lld\n", myrank, n, numelem, nlocal, nPartialSum, nglobal, mpifo);
 
 		if (MPI_File_read_at_all(posfh, mpifo, x[n], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
 			perror("positions file read error");
-		if(MPI_File_read_at_all(velfh, mpifo, v[n], 3*nlocal, MPI_LONG_DOUBLE, &status) != MPI_SUCCESS)
+		if(MPI_File_read_at_all(velfh, mpifo, v[n], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
 			perror("velocities file read error");
 		if (MPI_Get_count (&status, MPI_DOUBLE, &rcount) != MPI_SUCCESS)
 			perror("MPI get count error");
-/*
-		//if (n < 2 && myrank < 2)
-			for(int i = 0; i < nlocal ; i++) {
-				
-				if(x[n][i*PAD+0]<-10000000 || x[n][i*PAD+2]<-10000000 || x[n][i*PAD+2]<-10000000) 
-					printf("%d: %d: read %d atom pos %lf %lf %lf\n", myrank, n, i, x[n][i*PAD+0], x[n][i*PAD+1], x[n][i*PAD+2]);
-			//	if(v[n][i*PAD+0]<-10000000 || v[n][i*PAD+1]<-10000000 || v[n][i*PAD+2]<-10000000) 
-			//		printf("%d: %d: read %d atom vel %lf %lf %lf\n", myrank, n, i, v[n][i*PAD+0], v[n][i*PAD+1], v[n][i*PAD+2]);
-			}
-*/
+
+		for (int i=0; i<nlocal; i++) {
+			printf("%d x[%d][%d] = %lf\n", myrank, n, i*PAD+0, x[n][i*PAD+0]);
+			printf("%d v[%d][%d] = %lf\n", myrank, n, i*PAD+0, v[n][i*PAD+0]);
+		}
+
 	}
 
   MPI_File_close(&posfh);
