@@ -46,9 +46,14 @@ class Modalysis
 		void readFile();
 		void initAnalysis();
 
+		long long int getnlocal();
+		long long int getnglobal();
+
 		void compute_vacf(int);
 		void compute_msd(int);
 		void compute_histo(int, int);
+		void compute_fft(int);
+		void compute_fft_1d(int, int);
 
 };
 

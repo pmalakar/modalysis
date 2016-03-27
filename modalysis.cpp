@@ -44,8 +44,8 @@ void Modalysis::setup() {
 			printf("%d: Failed to allocate %d bytes to x[%d]\n", myrank, 3*nlocal*sizeof(double), n);
 	}
 
-	Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heapavail);
-	printf("%d: after allocating x free %lld\n", myrank, heapavail);
+	//Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heapavail);
+	//printf("%d: after allocating x free %lld\n", myrank, heapavail);
 
 	//velocities for all timesteps
 	v = (double **) malloc (ntimesteps * sizeof(double *));
@@ -121,12 +121,13 @@ void Modalysis::readFile() {
 			perror("velocities file read error");
 		if (MPI_Get_count (&status, MPI_DOUBLE, &rcount) != MPI_SUCCESS)
 			perror("MPI get count error");
-
-		for (int i=0; i<nlocal; i++) {
+//#ifdef DEBUG
+		//for (int i=0; i<nlocal; i++) {
+		for (int i=0; i<2; i++) {
 			printf("%d x[%d][%d] = %lf\n", myrank, n, i*PAD+0, x[n][i*PAD+0]);
 			printf("%d v[%d][%d] = %lf\n", myrank, n, i*PAD+0, v[n][i*PAD+0]);
 		}
-
+//#endif
 	}
 
   MPI_File_close(&posfh);
@@ -143,4 +144,11 @@ void Modalysis::initAnalysis() {
 
 }
 
+long long int Modalysis::getnlocal() {
+	return nlocal;
+}
+
+long long int Modalysis::getnglobal() {
+	return nglobal;
+}
 
