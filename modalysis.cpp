@@ -108,12 +108,13 @@ void Modalysis::readFile() {
 
 	MPI_Barrier(comm);
 
+	int numelem;
 	for (int n = 0; n<ntimesteps ; n++) {
 
 		offset = n*nglobal + nPartialSum - nlocal;
 		mpifo = offset * 3 * sizeof(double);
 
-		int numelem = 3*nlocal;
+		numelem = 3*nlocal;
 
 		if (MPI_File_read_at_all(posfh, mpifo, x[n], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
 			perror("positions file read error");
@@ -121,13 +122,14 @@ void Modalysis::readFile() {
 			perror("velocities file read error");
 		if (MPI_Get_count (&status, MPI_DOUBLE, &rcount) != MPI_SUCCESS)
 			perror("MPI get count error");
-//#ifdef DEBUG
+
+#ifdef DEBUG
 		//for (int i=0; i<nlocal; i++) {
 		for (int i=0; i<2; i++) {
 			printf("%d x[%d][%d] = %lf\n", myrank, n, i*PAD+0, x[n][i*PAD+0]);
 			printf("%d v[%d][%d] = %lf\n", myrank, n, i*PAD+0, v[n][i*PAD+0]);
 		}
-//#endif
+#endif
 	}
 
   MPI_File_close(&posfh);

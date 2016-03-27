@@ -1,6 +1,6 @@
 #include <fftw3.h>
 #include <fftw3-mpi.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include "modalysis.h"
 
 void Modalysis::compute_fft_1d(int tstart, int tend) {
@@ -16,6 +16,10 @@ void Modalysis::compute_fft_1d(int tstart, int tend) {
 	data = (double *) malloc(sizeof(double) * dim);
   alloc_size = 2 * (dim/2+1);
 	out = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * alloc_size);
+	if (out == NULL || data == NULL) {
+		printf("Memory allocation failed for out or data: %d\n", alloc_size);
+		exit(1);
+	}
 
 	/* create plan for forward DFT */
 	plan = fftw_plan_dft_r2c_1d(dim, data, out, FFTW_MEASURE);

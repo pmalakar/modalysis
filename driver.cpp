@@ -13,7 +13,7 @@
 
 int me, nprocs;
 long long int totalAtoms;
-int timesteps = 100;
+int timesteps = 20;
 
 Modalysis modalysis;
 
@@ -94,7 +94,7 @@ void execute() {
 
 	//vacf_();
 	//msd_();
-	//histo_();
+	histo_();
 	fft_();
 
 }
