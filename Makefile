@@ -8,6 +8,8 @@ SRCS = 	vacf.cpp \
 		histo.cpp \
 		fft1d.cpp \
 		modalysis.cpp \
+		postprocess.cpp \
+		coanalysis.cpp \
 		driver.cpp
 		
 OBJS = 	$(SRCS:.cpp=.o)
