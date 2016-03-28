@@ -1,3 +1,4 @@
+#include <mpi.h>
 #include "modalysis.h"
 
 void Modalysis::compute_vacf(int ts) {
@@ -27,8 +28,10 @@ void Modalysis::compute_vacf(int ts) {
     vacf[ts][3] /= nvacf;
   }
 
-//	if (myrank == 0)
-//		printf("vacf %d: %lf %lf %lf %lf | %lf %lf %lf %lf\n", ts, vector[0], vector[1], vector[2], vector[3], vacf[0], vacf[1], vacf[2], vacf[3]);
+#ifdef DEBUG
+	if (myrank == 0)
+		printf("vacf %d: %lf %lf %lf %lf | %lf %lf %lf %lf\n", ts, vector[0], vector[1], vector[2], vector[3], vacf[0], vacf[1], vacf[2], vacf[3]);
+#endif
 
 	return;
 

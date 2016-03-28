@@ -1,3 +1,4 @@
+#include <mpi.h>
 #include "modalysis.h"
 
 void Modalysis::compute_histo(int ts, int attribute) {

@@ -1,11 +1,18 @@
+/*
+ * Developed at Argonne National Laboratory
+ *
+ * Contact: pmalakar@anl.gov, malakar.preeti@gmail.com
+ *
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <spi/include/kernel/memory.h>
 #include <mpi.h>
-#include <fftw3.h>
-#include <fftw3-mpi.h>
+//#include <fftw3.h>
+//#include <fftw3-mpi.h>
 
 #include "modalysis.h"
 
@@ -13,11 +20,12 @@
 
 int me, nprocs;
 long long int totalAtoms;
-int timesteps = 20;
+int timesteps = 10;
 int postprocess = 0;
 
-Modalysis modalysis;
+//Modalysis modalysis;
 
+/*
 void vacf_() {
 
 	double time;
@@ -81,27 +89,7 @@ void fft_() {
 
 }
 
-void execute() {
-
-	if (postprocess) {
-
-		modalysis.setupPostprocess();
-		modalysis.readFile();
-		modalysis.initAnalysis();
-
-		vacf_();
-		msd_();
-		histo_();
-		fft_();
-
-	}
-
-	else {		//coanalysis
-
-	}
-
-}
-
+*/
 
 int main (int argc, char** argv) {
 
@@ -139,14 +127,27 @@ int main (int argc, char** argv) {
 
 		}
 
+		Modalysis modalysis;
+
 		modalysis.init(me, nprocs, postprocess, totalAtoms, timesteps);
 
-		printf("%s postprocess %d\n", analysiscfg, postprocess);
+		if (modalysis.comm == 0) {
+			printf("\n%d: Comm null %d\n", me, modalysis.comm);
+			exit(1);		
+		}
 
 		if (postprocess == 0) 
-			modalysis.readConfig(analysiscfg);
+			modalysis.coanalyze(analysiscfg);
+		else {
+			modalysis.setupPostprocess();
+			modalysis.readFile();
 
-		execute();
+		//	vacf_();
+		//	msd_();
+		//	histo_();
+		//	fft_();
+
+		}
 
 		//fftw_mpi_cleanup();
 		MPI_Finalize();
