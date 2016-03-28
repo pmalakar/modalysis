@@ -14,6 +14,7 @@
 int me, nprocs;
 long long int totalAtoms;
 int timesteps = 20;
+int postprocess = 0;
 
 Modalysis modalysis;
 
@@ -82,32 +83,68 @@ void fft_() {
 
 void execute() {
 
-	modalysis.myrank = me;
-	modalysis.nprocs = nprocs;
+	if (postprocess) {
 
-	//post-processing mode setup
-	modalysis.init(totalAtoms, timesteps);
-	modalysis.setup();
-	modalysis.readFile();
+		modalysis.setupPostprocess();
+		modalysis.readFile();
+		modalysis.initAnalysis();
 
-	modalysis.initAnalysis();
+		vacf_();
+		msd_();
+		histo_();
+		fft_();
 
-	//vacf_();
-	//msd_();
-	histo_();
-	fft_();
+	}
+
+	else {		//coanalysis
+
+	}
 
 }
 
+
 int main (int argc, char** argv) {
+
+		char *analysiscfg = NULL;
+		postprocess = 0;
 
 		MPI_Init(&argc, &argv);
 		//fftw_mpi_init();
 		MPI_Comm_rank(MPI_COMM_WORLD, &me);
 		MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-		if (argc == 2) 
-			totalAtoms = atoi(argv[1]);
+		for(int i = 0; i < argc; i++) {
+
+     if((strcmp(argv[i], "-a") == 0) || (strcmp(argv[i], "--num_atoms") == 0)) {
+       totalAtoms = atoi(argv[++i]);
+       continue;
+     }   
+
+     if((strcmp(argv[i], "-n") == 0) || (strcmp(argv[i], "--num_steps") == 0)) {
+       timesteps = atoi(argv[++i]);
+       continue;
+     }   
+
+     if((strcmp(argv[i], "-p") == 0) || (strcmp(argv[i], "--postprocess") == 0)) {
+       postprocess = atoi(argv[++i]);
+       continue;
+     }
+
+		 if((strcmp(argv[i], "-acfg") == 0) || (strcmp(argv[i], "--analysis_config_file") == 0)) {
+      if (analysiscfg == NULL) analysiscfg = new char[256];
+      if (analysiscfg != NULL) strcpy(analysiscfg, argv[++i]);
+      else printf("whats wrong!\n");
+      continue;
+     }
+
+		}
+
+		modalysis.init(me, nprocs, postprocess, totalAtoms, timesteps);
+
+		printf("%s postprocess %d\n", analysiscfg, postprocess);
+
+		if (postprocess == 0) 
+			modalysis.readConfig(analysiscfg);
 
 		execute();
 
@@ -116,4 +153,5 @@ int main (int argc, char** argv) {
 		return 0;
 
 }
+
 

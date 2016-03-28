@@ -6,6 +6,7 @@
 #include <mpi.h>
 
 #define PAD 3
+#define FILENAMELEN 64
 
 enum attributes {POSITION=1, VELOCITY, FORCE};
 
@@ -26,7 +27,7 @@ class Modalysis
 
 		int ntimesteps;
 
-		int preprocess;
+		int postprocess;
 
 		double **vacf;
 		double **msd;
@@ -38,13 +39,23 @@ class Modalysis
 
 		MPI_Comm comm;
 
+		int anum;
+		int *atevery;
+		int *atsteps;
+		char *afname;
+
 		Modalysis();
 		~Modalysis();
 
-		void init(long long int, int);
-		void setup();
+		void init(int, int, int, long long int, int);
+
+		void setupPostprocess();
 		void readFile();
 		void initAnalysis();
+
+		void aalloc(int);
+		
+		void readConfig(char *);
 
 		long long int getnlocal();
 		long long int getnglobal();
@@ -58,3 +69,4 @@ class Modalysis
 };
 
 #endif
+

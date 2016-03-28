@@ -8,13 +8,25 @@
 Modalysis::Modalysis() {
 	nlocal = 0;
 	x = v = f = NULL;
+
+	atevery = NULL;
+	atsteps = NULL;
+	afname = NULL;
 }
 
 Modalysis::~Modalysis() {}
 
-void Modalysis::init(long long int total, int timesteps) {
+/*
+ * initialize nlocal, nglobal, ntimesteps 
+ */
+void Modalysis::init(int me, int nprocs, int postprocess, long long int totalAtoms, int timesteps) {
 	
-	nglobal = total;
+	comm = MPI_COMM_WORLD;
+
+	myrank = me;
+	nprocs = nprocs;
+	postprocess = postprocess;
+	nglobal = totalAtoms;
 	ntimesteps = timesteps;
 
 	nlocal = nglobal/nprocs;
@@ -22,15 +34,14 @@ void Modalysis::init(long long int total, int timesteps) {
 	if (myrank == nprocs-1)
 		nlocal = nglobal - (nlocal*(nprocs-1));
 
-	preprocess = 1;
+//#ifdef DEBUG
+	printf ("%d: Init %d %d %d %d\n", myrank, nprocs, nglobal, nlocal, ntimesteps);
 
 	return;
 
 }
 
-void Modalysis::setup() {
-
-	comm = MPI_COMM_WORLD;
+void Modalysis::setupPostprocess() {
 
 	uint64_t heapavail;
 
@@ -153,4 +164,5 @@ long long int Modalysis::getnlocal() {
 long long int Modalysis::getnglobal() {
 	return nglobal;
 }
+
 
