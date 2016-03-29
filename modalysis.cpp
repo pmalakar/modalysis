@@ -21,10 +21,12 @@ Modalysis::Modalysis() {
 
 	atevery = NULL;
 	atsteps = NULL;
+	acurrstep = NULL;
 	afname = NULL;
 	newts = NULL;
 	current_ts = NULL;
 
+	configFile = NULL;
 }
 
 Modalysis::~Modalysis() {}
@@ -55,7 +57,24 @@ void Modalysis::init(int me, int nprocs, int postprocess, long long int totalAto
 		printf("\n%d: init Comm null %d\n", myrank, comm);
 		exit(1);		
 	}
+
+	
+
 	return;
+
+}
+
+void Modalysis::allocate_() {
+
+	xoriginal = (double *) malloc (3 * nlocal * sizeof(double));
+	voriginal = (double *) malloc (3 * nlocal * sizeof(double));
+
+	vacf = (double **) malloc (ntimesteps * sizeof(double *));
+	for (int n = 0; n<ntimesteps ; n++) 
+		vacf[n] = (double *) malloc (4 * sizeof(double));
+	msd = (double **) malloc (ntimesteps * sizeof(double *));
+	for (int n = 0; n<ntimesteps ; n++) 
+		msd[n] = (double *) malloc (4 * sizeof(double));
 
 }
 

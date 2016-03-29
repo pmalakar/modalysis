@@ -65,11 +65,6 @@ int main (int argc, char** argv) {
 
 		modalysis.init(me, nprocs, postprocess, totalAtoms, timesteps);
 
-		if (modalysis.comm == 0) {
-			printf("\n%d: Comm null %d\n", me, modalysis.comm);
-			exit(1);		
-		}
-
 		if (postprocess == 0) 
 			modalysis.coanalyze(analysiscfg);
 		else 

@@ -1,7 +1,7 @@
 #include <mpi.h>
 #include "modalysis.h"
 
-void Modalysis::compute_msd(int ts) {
+void Modalysis::compute_msd(int ts, double *arr) {
 
 	double dx, dy, dz;
 
@@ -9,10 +9,9 @@ void Modalysis::compute_msd(int ts) {
 
 	for (int i = 0; i < nlocal; i++) {
 
-	    //dx = x[ts][i*PAD+0] - cm[0] - xoriginal[i*PAD+0];
-	    dx = x[ts][i*PAD+0] - xoriginal[i*PAD+0];
-      dy = x[ts][i*PAD+1] - xoriginal[i*PAD+1];
-      dz = x[ts][i*PAD+2] - xoriginal[i*PAD+2];
+	    dx = arr[i*PAD+0] - xoriginal[i*PAD+0];
+      dy = arr[i*PAD+1] - xoriginal[i*PAD+1];
+      dz = arr[i*PAD+2] - xoriginal[i*PAD+2];
 
       vector[0] += dx*dx;
       vector[1] += dy*dy;

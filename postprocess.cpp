@@ -34,16 +34,6 @@ void Modalysis::setupPostprocess() {
 
 //	f = (double **) malloc (ntimesteps * sizeof(double *));
 
-	xoriginal = (double *) malloc (3 * nlocal * sizeof(double));
-	voriginal = (double *) malloc (3 * nlocal * sizeof(double));
-
-	vacf = (double **) malloc (ntimesteps * sizeof(double *));
-	for (int n = 0; n<ntimesteps ; n++) 
-		vacf[n] = (double *) malloc (4 * sizeof(double));
-	msd = (double **) malloc (ntimesteps * sizeof(double *));
-	for (int n = 0; n<ntimesteps ; n++) 
-		msd[n] = (double *) malloc (4 * sizeof(double));
-
 	return;
 
 }
@@ -99,13 +89,13 @@ void Modalysis::readFile() {
 		if (MPI_Get_count (&status, MPI_DOUBLE, &rcount) != MPI_SUCCESS)
 			perror("MPI get count error");
 
-//#ifdef DEBUG
+#ifdef DEBUG
 		//for (int i=0; i<nlocal; i++) {
 		for (int i=0; i<2; i++) {
 			printf("%d x[%d][%d] = %lf\n", myrank, n, i*PAD+0, x[n][i*PAD+0]);
 	//		printf("%d v[%d][%d] = %lf\n", myrank, n, i*PAD+0, v[n][i*PAD+0]);
 		}
-//#endif
+#endif
 	}
 
   MPI_File_close(&posfh);
@@ -122,11 +112,11 @@ void Modalysis::vacf_() {
 	double time;
 	double stime = MPI_Wtime();
 	for (int n=0; n<ntimesteps ; n++) { 
-		compute_vacf(n);
+		compute_vacf(n, v[n]);
 	}
 	stime = MPI_Wtime() - stime;
 	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
-	if (myrank == 0) printf("%lld Time taken to compute vacf: %lf\n", nglobal, time);
+	if (myrank == 0) printf("%lld Time to compute vacf: %lf\n", nglobal, time);
 
 }
 
@@ -135,11 +125,11 @@ void Modalysis::msd_() {
 	double time;
 	double stime = MPI_Wtime();
 	for (int n=0; n<ntimesteps ; n++) { 
-		compute_msd(n);
+		compute_msd(n, x[n]);
 	}
 	stime = MPI_Wtime() - stime;
 	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
-	if (myrank == 0) printf("%lld Time taken to compute msd: %lf\n", nglobal, time);
+	if (myrank == 0) printf("%lld Time to compute msd: %lf\n", nglobal, time);
 
 }
 
@@ -153,7 +143,7 @@ void Modalysis::histo_() {
 	}
 	stime = MPI_Wtime() - stime;
 	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
-	if (myrank == 0) printf("%lld Time taken to compute histo: %lf\n", nglobal, time);
+	if (myrank == 0) printf("%lld Time to compute histo: %lf\n", nglobal, time);
 
 }
 
@@ -173,13 +163,14 @@ void Modalysis::fft_() {
 
 	stime = MPI_Wtime() - stime;
 	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
-	if (myrank == 0) printf("%lld Time taken to compute fft: %lf\n", nglobal, time);
+	if (myrank == 0) printf("%lld Time to compute fft: %lf\n", nglobal, time);
 
 }
 
 void Modalysis::postprocessdata() {
 
 	setupPostprocess();
+	allocate_();
 	readFile();
 
 	vacf_();

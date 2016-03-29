@@ -42,10 +42,13 @@ class Modalysis
 		double **vacf;
 		double **msd;
 
+		char *configFile;
+
 		int anum;
 		int *adim;
 		int *atevery;
 		int *atsteps;
+		int *acurrstep;
 		char *afname;
 		char *aname;
 
@@ -55,9 +58,9 @@ class Modalysis
 		int *newts;
 		double ***array;
 
-	public:
-
 		MPI_Comm comm;
+
+	public:
 
 		Modalysis();
 		~Modalysis();
@@ -79,12 +82,15 @@ class Modalysis
 		void processTimeStep(int);
 		void process();
 		void aalloc(int);
+		bool check_new_timestep(int);
+
+		void allocate_();
 
 		long long int getnlocal();
 		long long int getnglobal();
 
-		void compute_vacf(int);
-		void compute_msd(int);
+		void compute_vacf(int, double *);
+		void compute_msd(int, double *);
 		void compute_histo(int, int);
 		void compute_fft(int);
 		void compute_fft_1d(int, int);

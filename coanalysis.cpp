@@ -1,4 +1,12 @@
+/*
+ * Developed at Argonne National Laboratory
+ *
+ * Contact: pmalakar@anl.gov, malakar.preeti@gmail.com
+ *
+ */
+
 #include <mpi.h>
+#include <time.h>
 #include <errno.h>
 #include <stdlib.h>
 #include "modalysis.h"
@@ -13,8 +21,11 @@ void Modalysis::readConfig(char *analysiscfg)
 
 	if (analysiscfg == NULL) { 
 		printf("Config file NULL error %d\n", myrank);
-		return;
+		exit(1);
 	}
+
+	configFile = new char[strlen(analysiscfg)];
+	strcpy(configFile, analysiscfg);
 
 	if (myrank == 0) {
 
@@ -27,9 +38,10 @@ void Modalysis::readConfig(char *analysiscfg)
     fscanf(fp, "%d", &anum);
     aalloc(anum);
 
+		//Read number of dimensions | compute after every n steps | total N steps | file name | analysis name 
     i = 0;
     while(i<anum) {
-      fscanf(fp, "%d %d %d %s %s", &adim[i], &atevery[i], &atsteps[i], afname+i*FILENAMELEN, aname+i*ANAMELEN);
+      fscanf(fp, "%d %d %d %d %s %s", &adim[i], &atevery[i], &atsteps[i], &acurrstep[i], afname+i*FILENAMELEN, aname+i*ANAMELEN);
       ++i;
     }   
   
@@ -52,15 +64,17 @@ void Modalysis::readConfig(char *analysiscfg)
 		printf("\nAnalysis config atevery bcast error %d %s\n", errno, strerror(errno));
 	if (MPI_Bcast(atsteps, anum, MPI_INT, 0, comm) != MPI_SUCCESS)
 		printf("\nAnalysis config atsteps bcast error %d %s\n", errno, strerror(errno));
+	if (MPI_Bcast(acurrstep, anum, MPI_INT, 0, comm) != MPI_SUCCESS)
+		printf("\nAnalysis config acurrstep bcast error %d %s\n", errno, strerror(errno));
 	if (MPI_Bcast(afname, anum*FILENAMELEN, MPI_CHAR, 0, comm) != MPI_SUCCESS)
 		printf("\nAnalysis file name bcast error %d %s\n", errno, strerror(errno));
 	if (MPI_Bcast(aname, anum*ANAMELEN, MPI_CHAR, 0, comm) != MPI_SUCCESS)
-		printf("\nAnalysis file name bcast error %d %s\n", errno, strerror(errno));
+		printf("\nAnalysis name bcast error %d %s\n", errno, strerror(errno));
 
 //#ifdef DEBUG
 	if (myrank < 2)
 	for (i=0; i<anum; i++) 
-		printf("%d %d | %d %d %d %s %s\n", myrank, i, adim[i], atevery[i], atsteps[i], afname+i*FILENAMELEN, aname+i*ANAMELEN);
+		printf("%d %d | %d %d %d %d %s %s\n", myrank, i, adim[i], atevery[i], atsteps[i], acurrstep[i], afname+i*FILENAMELEN, aname+i*ANAMELEN);
 //#endif
 
 }
@@ -73,8 +87,9 @@ void Modalysis::initAnalyses() {
 	//allocate 
 	for (i=0; i<anum; i++) {
 
-		current_ts[i] = 0;
-		newts[i]  = false;
+		current_ts[i] = -1;
+		//newts[i]  = -1;
+
 		array[i] = new double*[atsteps[i]];
 
 		for (j=0; j<atsteps[i]; j++) {
@@ -87,34 +102,23 @@ void Modalysis::initAnalyses() {
 		retval = MPI_File_open (comm, afname+i*FILENAMELEN, MPI_MODE_RDONLY, MPI_INFO_NULL, &afh[i]);
 		if (retval != MPI_SUCCESS) 
 			printf("\nAnalysis file open error %d %s\n", errno, strerror(errno));
-	}
 
+	}
 
 }
 
-void Modalysis::finiAnalyses() {
-
-	for (int i=0; i<anum; i++) {
-		MPI_File_close (&afh[i]);
-	}
-
-	delete atsteps;
-	delete atevery;
-	delete afname;
-	delete aname;
-	delete newts;
-	delete current_ts;
-
-	free(afh);
-
-}
 
 void Modalysis::processTimeStep(int aindex) {
 
 	MPI_Offset offset, mpifo;
 	MPI_Status status;
 	long long int numelem;
-	int n = current_ts[aindex];
+	int n = acurrstep[aindex];
+	double time;
+	double stime;
+
+	if (myrank ==0)
+		printf("Process %d step for %d analysis [%s]\n", n, aindex, aname+aindex*ANAMELEN);
 
 	MPI_Scan(&nlocal, &nPartialSum, 1, MPI_LONG_LONG_INT, MPI_SUM, comm);
 
@@ -125,51 +129,187 @@ void Modalysis::processTimeStep(int aindex) {
 	if (MPI_File_read_at_all(afh[aindex], mpifo, array[aindex][n], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
 		perror("file read error");
 
-
+#ifdef DEBUG
 	for (int j=0; j<3; j++) 
 		printf("%d array[%d][%d][%d] = %lf\n", myrank, aindex, n, j, array[aindex][n][j]);
+#endif
 
+	//Call analysis functions
+	
+	if (strcmp(aname+aindex*ANAMELEN, "vacf") == 0) {	
+
+		if (n == 0)
+		 for (int k = 0; k<nlocal*adim[aindex] ; k++) 
+			voriginal[k] = array[aindex][0][k];
 		
+		stime = MPI_Wtime();
+		compute_vacf(n, array[aindex][n]);
+		stime = MPI_Wtime() - stime;
+		MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
+		if (myrank == 0) printf("%lld Time to compute vacf: %lf\n", nglobal, time);
+	
+	}
+	else if (strcmp(aname+aindex*ANAMELEN, "msd") == 0)	{
+
+		if (n == 0)
+		 for (int k = 0; k<nlocal*adim[aindex] ; k++) 
+			xoriginal[k] = array[aindex][0][k];
+		
+		stime = MPI_Wtime();
+		compute_msd(n, array[aindex][n]);
+		stime = MPI_Wtime() - stime;
+		MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
+		if (myrank == 0) printf("%lld Time to compute msd: %lf\n", nglobal, time);
+	}
 
 }
 
 void Modalysis::process() {
 
-	int i;
+	int aindex;
+	bool alldone = false;
+	bool done[anum];
 		
-	for (i=0; i<anum; i++) {
-		newts[i] = -1;
-		if (atevery[i] == 1) {
-		//	while (newts[i] != current_ts[i]) {
-				//check if new timestep is written
-		//	}
-			processTimeStep(i);				
-			current_ts[i] ++;
+	while (!alldone) {
+		
+	 alldone = true;
+	 for (aindex=0; aindex<anum; aindex++) {
+
+	 	done[aindex] = false;
+		if (acurrstep[aindex]+1 == atsteps[aindex])
+			done[aindex] = true;
+		else
+			done[aindex] = false, alldone = false;
+
+		//remove this later
+		if (atevery[aindex] != 1) done[aindex] = true;
+		
+		if(myrank < 1) {
+			if (done[aindex])	
+				printf ("done for %d? %d %d %d\n", aindex, atevery[aindex], acurrstep[aindex], atsteps[aindex]);
+			else
+				printf ("not done for %d? %d %d %d\n", aindex, atevery[aindex], acurrstep[aindex], atsteps[aindex]);
 		}
+	 }
+/*
+	 alldone = true;
+
+	 //find if any more analysis remaining
+	 for (aindex=0; aindex<anum; aindex++) {
+	 	if (!done[index]) {
+			printf("%d not done\n", aindex);
+			alldone = false;
+			break;
+	 	}
+	 }
+*/
+	 if (alldone) break;
+
+	 for (aindex=0; aindex<anum; aindex++) {
+			//If all timesteps processed, continue
+		 	if (acurrstep[aindex]+1 == atsteps[aindex]) continue;
+			if (atevery[aindex] == 1) {
+				while (check_new_timestep(aindex) != true) sleep(10);  
+				processTimeStep(aindex);				
+				current_ts[aindex] ++; 
+			}
+	 }
+	}
+}
+
+bool Modalysis::check_new_timestep(int aidx) {
+
+	bool value = false;
+	
+	if (myrank == 0) {
+
+		printf("0 check %s for new timestep: current_ts[%d]=%d acurrstep[%d]=%d\n", configFile, aidx, current_ts[aidx], aidx, acurrstep[aidx]);
+
+		if (configFile == NULL)
+			printf("configFile NULL\n");
+
+		int num;
+		int a, b, c, currstep;
+		char str1[FILENAMELEN], str2[FILENAMELEN];
+
+    FILE *fp = fopen (configFile, "r");
+    if (fp == NULL) {
+      printf("Config file open error %d %s\n", errno, strerror(errno));
+      exit(1);
+    }   
+    
+    fscanf(fp, "%d", &num);
+
+		//Read number of dimensions | compute after every n steps | total N steps | file name | analysis name 
+    int i = 0;
+    while(i<num) {
+      fscanf(fp, "%d %d %d %d %s %s", &a, &b, &c, &currstep, str1, str2);
+			if (i == aidx) break;
+      ++i;
+    }   
+		fclose(fp);
+
+		acurrstep[aidx] = currstep;
+		printf ("0 read current step for %d = %d\n", aidx, acurrstep[aidx]);
+
 	}
 
+	MPI_Bcast(&acurrstep[aidx], 1, MPI_INT, 0, comm);
+
+	if (current_ts[aidx] + 1 <= acurrstep[aidx])
+		value = true;
+	else
+		value = false;
+
+	return value;
+
 }
+
 
 void Modalysis::aalloc(int anum)
 {
 	adim = new int[anum];
 	atevery = new int[anum];
   atsteps = new int[anum];
+  acurrstep = new int[anum];
   afname = new char[anum*FILENAMELEN];
   aname = new char[anum*ANAMELEN];
 
 	afh = (MPI_File *) malloc(anum * sizeof(MPI_File)); 
+
   current_ts = new int[anum];
-  newts = new int[anum];
+  //newts = new int[anum];
 
 	array = new double**[anum];
 	for (int n = 0; n<anum ; n++) 
 		array[n] = NULL;
 }
 
+void Modalysis::finiAnalyses() {
+
+	for (int i=0; i<anum; i++) {
+		MPI_File_close (&afh[i]);
+	}
+
+	delete adim;
+	delete atevery;
+	delete atsteps;
+	delete acurrstep;
+	delete afname;
+	delete aname;
+
+	//delete newts;
+	delete current_ts;
+
+	free(afh);
+
+}
+
 void Modalysis::coanalyze(char *cfg) {
 
 	readConfig(cfg);
+
+	allocate_();
 	initAnalyses();
 	process();
 	finiAnalyses();

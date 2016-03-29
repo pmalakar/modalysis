@@ -2,16 +2,16 @@
 #include <stdio.h>
 #include "modalysis.h"
 
-void Modalysis::compute_vacf(int ts) {
+void Modalysis::compute_vacf(int ts, double *arr) {
 
 	double vxsq, vysq, vzsq;
 	double vector[4] = {0};
 
 	for (int i = 0; i < nlocal; i++) {
 
-		vxsq = v[ts][i*PAD+0] * voriginal[i*PAD+0];
-		vysq = v[ts][i*PAD+1] * voriginal[i*PAD+1];
-		vzsq = v[ts][i*PAD+2] * voriginal[i*PAD+2];
+		vxsq = arr[i*PAD+0] * voriginal[i*PAD+0];
+		vysq = arr[i*PAD+1] * voriginal[i*PAD+1];
+		vzsq = arr[i*PAD+2] * voriginal[i*PAD+2];
 		vector[0] += vxsq;
 		vector[1] += vysq;
 		vector[2] += vzsq;
