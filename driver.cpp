@@ -25,72 +25,6 @@ int postprocess = 0;
 
 //Modalysis modalysis;
 
-/*
-void vacf_() {
-
-	double time;
-	double stime = MPI_Wtime();
-	for (int n=0; n<timesteps ; n++) { 
-		modalysis.compute_vacf(n);
-	}
-	stime = MPI_Wtime() - stime;
-	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, modalysis.comm);
-	if (me == 0) printf("%lld Time taken to compute vacf: %lf\n", modalysis.getnglobal(), time);
-
-}
-
-void msd_() {
-
-	double time;
-	double stime = MPI_Wtime();
-	for (int n=0; n<timesteps ; n++) { 
-		modalysis.compute_msd(n);
-	}
-	stime = MPI_Wtime() - stime;
-	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, modalysis.comm);
-	if (me == 0) printf("%lld Time taken to compute msd: %lf\n", modalysis.getnglobal(), time);
-
-}
-
-void histo_() {
-
-	double time;
-	double stime = MPI_Wtime();
-	for (int n=0; n<timesteps ; n=n+1) { 
-		modalysis.compute_histo(n, POSITION);	
-		modalysis.compute_histo(n, VELOCITY);	
-	}
-	stime = MPI_Wtime() - stime;
-	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, modalysis.comm);
-	if (me == 0) printf("%lld Time taken to compute histo: %lf\n", modalysis.getnglobal(), time);
-
-}
-
-void fft_() {
-	
-	//for (int n=0; n<1 ; n++) { 
-	//	modalysis.compute_fft(n);
-	//}
-	int tend;	
-	if (timesteps>=100)
-		tend = 100;
-	else
-		tend = timesteps;
-
-	double time;
-	double stime = MPI_Wtime();
-
-	for (int i=0; i<modalysis.getnlocal() ; i++) 
-		modalysis.compute_fft_1d(0, tend);
-
-	stime = MPI_Wtime() - stime;
-	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, modalysis.comm);
-	if (me == 0) printf("%lld Time taken to compute fft: %lf\n", modalysis.getnglobal(), time);
-
-}
-
-*/
-
 int main (int argc, char** argv) {
 
 		char *analysiscfg = NULL;
@@ -138,16 +72,8 @@ int main (int argc, char** argv) {
 
 		if (postprocess == 0) 
 			modalysis.coanalyze(analysiscfg);
-		else {
-			modalysis.setupPostprocess();
-			modalysis.readFile();
-
-		//	vacf_();
-		//	msd_();
-		//	histo_();
-		//	fft_();
-
-		}
+		else 
+			modalysis.postprocessdata();
 
 		//fftw_mpi_cleanup();
 		MPI_Finalize();

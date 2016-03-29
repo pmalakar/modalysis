@@ -29,7 +29,7 @@ void Modalysis::readConfig(char *analysiscfg)
 
     i = 0;
     while(i<anum) {
-      fscanf(fp, "%d %d %d %s", &adim[i], &atevery[i], &atsteps[i], afname+i*FILENAMELEN);
+      fscanf(fp, "%d %d %d %s %s", &adim[i], &atevery[i], &atsteps[i], afname+i*FILENAMELEN, aname+i*ANAMELEN);
       ++i;
     }   
   
@@ -54,11 +54,14 @@ void Modalysis::readConfig(char *analysiscfg)
 		printf("\nAnalysis config atsteps bcast error %d %s\n", errno, strerror(errno));
 	if (MPI_Bcast(afname, anum*FILENAMELEN, MPI_CHAR, 0, comm) != MPI_SUCCESS)
 		printf("\nAnalysis file name bcast error %d %s\n", errno, strerror(errno));
+	if (MPI_Bcast(aname, anum*ANAMELEN, MPI_CHAR, 0, comm) != MPI_SUCCESS)
+		printf("\nAnalysis file name bcast error %d %s\n", errno, strerror(errno));
 
-#ifdef DEBUG
+//#ifdef DEBUG
+	if (myrank < 2)
 	for (i=0; i<anum; i++) 
-		printf("%d %d | %d %d %d %s\n", myrank, i, adim[i], atevery[i], atsteps[i], afname+i*FILENAMELEN);
-#endif
+		printf("%d %d | %d %d %d %s %s\n", myrank, i, adim[i], atevery[i], atsteps[i], afname+i*FILENAMELEN, aname+i*ANAMELEN);
+//#endif
 
 }
 
@@ -98,6 +101,7 @@ void Modalysis::finiAnalyses() {
 	delete atsteps;
 	delete atevery;
 	delete afname;
+	delete aname;
 	delete newts;
 	delete current_ts;
 
@@ -121,8 +125,11 @@ void Modalysis::processTimeStep(int aindex) {
 	if (MPI_File_read_at_all(afh[aindex], mpifo, array[aindex][n], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
 		perror("file read error");
 
+
 	for (int j=0; j<3; j++) 
 		printf("%d array[%d][%d][%d] = %lf\n", myrank, aindex, n, j, array[aindex][n][j]);
+
+		
 
 }
 
@@ -149,6 +156,7 @@ void Modalysis::aalloc(int anum)
 	atevery = new int[anum];
   atsteps = new int[anum];
   afname = new char[anum*FILENAMELEN];
+  aname = new char[anum*ANAMELEN];
 
 	afh = (MPI_File *) malloc(anum * sizeof(MPI_File)); 
   current_ts = new int[anum];

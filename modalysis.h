@@ -13,6 +13,7 @@
 #include <mpi.h>
 
 #define PAD 3
+#define ANAMELEN 16
 #define FILENAMELEN 64
 
 enum attributes {POSITION=1, VELOCITY, FORCE};
@@ -46,6 +47,7 @@ class Modalysis
 		int *atevery;
 		int *atsteps;
 		char *afname;
+		char *aname;
 
 		MPI_File *afh;
 
@@ -62,8 +64,13 @@ class Modalysis
 
 		void init(int, int, int, long long int, int);
 
+		void postprocessdata(); 
 		void setupPostprocess();
 		void readFile();
+		void vacf_();
+		void msd_();
+		void histo_();
+		void fft_();
 
 		void coanalyze(char *);	
 		void readConfig(char *);

@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <stdio.h>
 #include "modalysis.h"
 
 void Modalysis::compute_vacf(int ts) {

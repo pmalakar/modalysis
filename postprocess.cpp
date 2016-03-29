@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <mpi.h>
 #include <spi/include/kernel/memory.h>
 #include "modalysis.h"
 
@@ -65,6 +66,11 @@ void Modalysis::readFile() {
 	MPI_File posfh, velfh;
 	int rcount;
 
+	if (comm == 0) {
+		printf("\n%d: Comm null %d\n", myrank, comm);
+		exit(1);		
+	}
+
 	MPI_Scan(&nlocal, &nPartialSum, 1, MPI_LONG_LONG_INT, MPI_SUM, comm);
 
   MPI_File_open(comm, posfile, MPI_MODE_RDONLY, MPI_INFO_NULL, &posfh);
@@ -111,6 +117,76 @@ void Modalysis::readFile() {
 	}
 }
 
+void Modalysis::vacf_() {
 
+	double time;
+	double stime = MPI_Wtime();
+	for (int n=0; n<ntimesteps ; n++) { 
+		compute_vacf(n);
+	}
+	stime = MPI_Wtime() - stime;
+	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
+	if (myrank == 0) printf("%lld Time taken to compute vacf: %lf\n", nglobal, time);
+
+}
+
+void Modalysis::msd_() {
+
+	double time;
+	double stime = MPI_Wtime();
+	for (int n=0; n<ntimesteps ; n++) { 
+		compute_msd(n);
+	}
+	stime = MPI_Wtime() - stime;
+	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
+	if (myrank == 0) printf("%lld Time taken to compute msd: %lf\n", nglobal, time);
+
+}
+
+void Modalysis::histo_() {
+
+	double time;
+	double stime = MPI_Wtime();
+	for (int n=0; n<ntimesteps ; n=n+1) { 
+		compute_histo(n, POSITION);	
+		compute_histo(n, VELOCITY);	
+	}
+	stime = MPI_Wtime() - stime;
+	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
+	if (myrank == 0) printf("%lld Time taken to compute histo: %lf\n", nglobal, time);
+
+}
+
+void Modalysis::fft_() {
+	
+	int tend;	
+	if (ntimesteps>=100)
+		tend = 100;
+	else
+		tend = ntimesteps;
+
+	double time;
+	double stime = MPI_Wtime();
+
+	for (int i=0; i<nlocal ; i++) 
+		compute_fft_1d(0, tend);
+
+	stime = MPI_Wtime() - stime;
+	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
+	if (myrank == 0) printf("%lld Time taken to compute fft: %lf\n", nglobal, time);
+
+}
+
+void Modalysis::postprocessdata() {
+
+	setupPostprocess();
+	readFile();
+
+	vacf_();
+	msd_();
+	histo_();
+	fft_();
+
+}
 
 
