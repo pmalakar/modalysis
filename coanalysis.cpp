@@ -124,7 +124,12 @@ void Modalysis::processTimeStep(int aindex, int n) {
 	mpifo = offset * adim[aindex] * sizeof(double);
 	numelem = adim[aindex] * nlocal;
 
-	for (int nidx=n; nidx<nend ; nidx++)
+	if (myrank ==0) {
+		printf("test %lld %lld %lld: %lld\n", nlocal, nPartialSum, nglobal, numelem);
+		printf("Read from %lld for %d analysis [%s]\n", mpifo, aindex, aname+aindex*ANAMELEN);
+	}
+
+	for (int nidx=n; nidx<nend ; nidx++) 
 		if (MPI_File_read_at_all(afh[aindex], mpifo, array[aindex][nidx], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
 			perror("File read error");
 
@@ -187,7 +192,8 @@ void Modalysis::process() {
 	 for (aindex=0; aindex<anum; aindex++) {
 
 	 	done[aindex] = false;
-		if (acurrstep[aindex]+1 == atsteps[aindex])
+		//if (acurrstep[aindex]+1 == atsteps[aindex])
+		if (current_ts[aindex]+1 == atsteps[aindex])
 			done[aindex] = true;
 		else
 			done[aindex] = false, alldone = false;
@@ -202,7 +208,8 @@ void Modalysis::process() {
 	 for (aindex=0; aindex<anum; aindex++) {
 
 			//Check if all timesteps processed
-			if (acurrstep[aindex]+1 == atsteps[aindex]) continue;
+			//if (acurrstep[aindex]+1 == atsteps[aindex]) continue;
+			if (current_ts[aindex]+1 == atsteps[aindex]) continue;
 
 			while (check_new_timestep(aindex) != true) sleep(10);  
 			processTimeStep(aindex, current_ts[aindex]+1);				

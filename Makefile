@@ -1,7 +1,7 @@
 CC=mpixlc
 CXX=mpixlcxx
 
-CFLAGS=-O3 -g #-pg
+CFLAGS=-g #-O3 #-pg
 
 SRCS = 	vacf.cpp \
 		msd.cpp \
