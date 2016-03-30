@@ -159,7 +159,7 @@ void Modalysis::fft_() {
 	double stime = MPI_Wtime();
 
 	for (int i=0; i<nlocal ; i++) 
-		compute_fft_1d(0, tend);
+		compute_fft_1d(0, tend, i, x);
 
 	stime = MPI_Wtime() - stime;
 	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);

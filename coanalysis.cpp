@@ -88,7 +88,6 @@ void Modalysis::initAnalyses() {
 	for (i=0; i<anum; i++) {
 
 		current_ts[i] = -1;
-		//newts[i]  = -1;
 
 		array[i] = new double*[atsteps[i]];
 
@@ -146,9 +145,10 @@ void Modalysis::processTimeStep(int aindex, int n) {
 		compute_vacf(n, array[aindex][n]);
 		stime = MPI_Wtime() - stime;
 		MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
-		if (myrank == 0) printf("%lld Time to compute vacf: %lf\n", nglobal, time);
+		if (myrank == 0) printf("%lld Time to compute vacf[%d]: %lf\n", nglobal, n, time);
 	
 	}
+
 	else if (strcmp(aname+aindex*ANAMELEN, "msd") == 0)	{
 
 		if (n == 0)
@@ -159,7 +159,18 @@ void Modalysis::processTimeStep(int aindex, int n) {
 		compute_msd(n, array[aindex][n]);
 		stime = MPI_Wtime() - stime;
 		MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
-		if (myrank == 0) printf("%lld Time to compute msd: %lf\n", nglobal, time);
+		if (myrank == 0) printf("%lld Time to compute msd[%d]: %lf\n", nglobal, n, time);
+	}
+
+	else if (strncmp(aname+aindex*ANAMELEN, "fft", 3) == 0)	{
+		if (myrank == 0) printf("call fft for %s\n", aname+aindex*ANAMELEN);
+
+		stime = MPI_Wtime();
+		for (int k=0; k<nlocal ; k++) 
+			compute_fft_1d(n, nend, k, array[aindex]);
+		stime = MPI_Wtime() - stime;
+		MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
+		if (myrank == 0) printf("%lld Time to compute fft[%d, %d): %lf\n", nglobal, n, nend, time);
 	}
 
 }
@@ -181,13 +192,8 @@ void Modalysis::process() {
 		else
 			done[aindex] = false, alldone = false;
 
-		//if (atevery[aindex] != 1) done[aindex] = true;
-		
 		if(myrank < 1) 
-			if (done[aindex])	
-				printf ("done for %d: %d %d\n", aindex, acurrstep[aindex], atsteps[aindex]);
-			else
-				printf ("not done for %d? %d %d\n", aindex, acurrstep[aindex], atsteps[aindex]);
+			if (done[aindex]) printf ("done for %d: %d %d\n", aindex, acurrstep[aindex], atsteps[aindex]);
 		
 	 }
 
@@ -198,11 +204,10 @@ void Modalysis::process() {
 			//Check if all timesteps processed
 			if (acurrstep[aindex]+1 == atsteps[aindex]) continue;
 
-		//if (atevery[aindex] == 1) {
 			while (check_new_timestep(aindex) != true) sleep(10);  
 			processTimeStep(aindex, current_ts[aindex]+1);				
 			current_ts[aindex] += atevery[aindex]; 
-		//}
+
 	 }
 	}
 }
@@ -240,7 +245,7 @@ bool Modalysis::check_new_timestep(int aidx) {
 		fclose(fp);
 
 		acurrstep[aidx] = currstep;
-		printf ("%d current step read %d\n", aidx, acurrstep[aidx]);
+		//printf ("%d current step read %d\n", aidx, acurrstep[aidx]);
 
 	}
 
@@ -268,7 +273,6 @@ void Modalysis::aalloc(int anum)
 	afh = (MPI_File *) malloc(anum * sizeof(MPI_File)); 
 
   current_ts = new int[anum];
-  //newts = new int[anum];
 
 	array = new double**[anum];
 	for (int n = 0; n<anum ; n++) 
@@ -288,7 +292,6 @@ void Modalysis::finiAnalyses() {
 	delete afname;
 	delete aname;
 
-	//delete newts;
 	delete current_ts;
 
 	free(afh);

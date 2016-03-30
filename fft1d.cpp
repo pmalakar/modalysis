@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "modalysis.h"
 
-void Modalysis::compute_fft_1d(int tstart, int tend) {
+void Modalysis::compute_fft_1d(int tstart, int tend, int atom, double **arr) {
 
 	fftw_plan plan;
 	double *data;
@@ -28,9 +28,8 @@ void Modalysis::compute_fft_1d(int tstart, int tend) {
 	double t = MPI_Wtime();
 #endif
 
-	for (int ts = tstart, j=-1; ts < tend; ts++) { 
-		data[++j] = x[ts][0];
-	}
+	for (int ts = tstart, j=-1; ts < tend; ts++)  
+		data[++j] = arr[ts][atom];
 
 #ifdef DEBUG
 	t = MPI_Wtime() - t;
