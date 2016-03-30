@@ -79,7 +79,7 @@ class Modalysis
 		void readConfig(char *);
 		void initAnalyses();
 		void finiAnalyses();
-		void processTimeStep(int);
+		void processTimeStep(int, int);
 		void process();
 		void aalloc(int);
 		bool check_new_timestep(int);

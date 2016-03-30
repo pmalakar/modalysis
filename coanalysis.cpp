@@ -108,17 +108,16 @@ void Modalysis::initAnalyses() {
 }
 
 
-void Modalysis::processTimeStep(int aindex) {
+void Modalysis::processTimeStep(int aindex, int n) {
 
 	MPI_Offset offset, mpifo;
 	MPI_Status status;
 	long long int numelem;
-	int n = acurrstep[aindex];
-	double time;
-	double stime;
+	int nend = n + atevery[aindex];
+	double time, stime;
 
 	if (myrank ==0)
-		printf("Process %d step for %d analysis [%s]\n", n, aindex, aname+aindex*ANAMELEN);
+		printf("Process %d to %d step for %d analysis [%s]\n", n, nend, aindex, aname+aindex*ANAMELEN);
 
 	MPI_Scan(&nlocal, &nPartialSum, 1, MPI_LONG_LONG_INT, MPI_SUM, comm);
 
@@ -126,8 +125,9 @@ void Modalysis::processTimeStep(int aindex) {
 	mpifo = offset * adim[aindex] * sizeof(double);
 	numelem = adim[aindex] * nlocal;
 
-	if (MPI_File_read_at_all(afh[aindex], mpifo, array[aindex][n], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
-		perror("file read error");
+	for (int nidx=n; nidx<nend ; nidx++)
+		if (MPI_File_read_at_all(afh[aindex], mpifo, array[aindex][nidx], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
+			perror("File read error");
 
 #ifdef DEBUG
 	for (int j=0; j<3; j++) 
@@ -181,38 +181,28 @@ void Modalysis::process() {
 		else
 			done[aindex] = false, alldone = false;
 
-		//remove this later
-		if (atevery[aindex] != 1) done[aindex] = true;
+		//if (atevery[aindex] != 1) done[aindex] = true;
 		
-		if(myrank < 1) {
+		if(myrank < 1) 
 			if (done[aindex])	
-				printf ("done for %d? %d %d %d\n", aindex, atevery[aindex], acurrstep[aindex], atsteps[aindex]);
+				printf ("done for %d: %d %d\n", aindex, acurrstep[aindex], atsteps[aindex]);
 			else
-				printf ("not done for %d? %d %d %d\n", aindex, atevery[aindex], acurrstep[aindex], atsteps[aindex]);
-		}
+				printf ("not done for %d? %d %d\n", aindex, acurrstep[aindex], atsteps[aindex]);
+		
 	 }
-/*
-	 alldone = true;
 
-	 //find if any more analysis remaining
-	 for (aindex=0; aindex<anum; aindex++) {
-	 	if (!done[index]) {
-			printf("%d not done\n", aindex);
-			alldone = false;
-			break;
-	 	}
-	 }
-*/
-	 if (alldone) break;
+	 if (alldone) break;	 
 
 	 for (aindex=0; aindex<anum; aindex++) {
-			//If all timesteps processed, continue
-		 	if (acurrstep[aindex]+1 == atsteps[aindex]) continue;
-			if (atevery[aindex] == 1) {
-				while (check_new_timestep(aindex) != true) sleep(10);  
-				processTimeStep(aindex);				
-				current_ts[aindex] ++; 
-			}
+
+			//Check if all timesteps processed
+			if (acurrstep[aindex]+1 == atsteps[aindex]) continue;
+
+		//if (atevery[aindex] == 1) {
+			while (check_new_timestep(aindex) != true) sleep(10);  
+			processTimeStep(aindex, current_ts[aindex]+1);				
+			current_ts[aindex] += atevery[aindex]; 
+		//}
 	 }
 	}
 }
@@ -222,9 +212,9 @@ bool Modalysis::check_new_timestep(int aidx) {
 	bool value = false;
 	
 	if (myrank == 0) {
-
+//#ifdef DEBUG
 		printf("0 check %s for new timestep: current_ts[%d]=%d acurrstep[%d]=%d\n", configFile, aidx, current_ts[aidx], aidx, acurrstep[aidx]);
-
+//#endif
 		if (configFile == NULL)
 			printf("configFile NULL\n");
 
@@ -250,13 +240,13 @@ bool Modalysis::check_new_timestep(int aidx) {
 		fclose(fp);
 
 		acurrstep[aidx] = currstep;
-		printf ("0 read current step for %d = %d\n", aidx, acurrstep[aidx]);
+		printf ("%d current step read %d\n", aidx, acurrstep[aidx]);
 
 	}
 
 	MPI_Bcast(&acurrstep[aidx], 1, MPI_INT, 0, comm);
 
-	if (current_ts[aidx] + 1 <= acurrstep[aidx])
+	if (current_ts[aidx] + atevery[aidx] <= acurrstep[aidx])
 		value = true;
 	else
 		value = false;
