@@ -95,12 +95,12 @@ void Modalysis::initAnalyses() {
 			numbytes = adim[i] * nlocal * sizeof(double);
 			array[i][j] = (double *) malloc (numbytes);
 			if(array[i][j] == NULL) 
-				printf("%d: Failed to allocate %d bytes for array[%d][%d]\n", myrank, numbytes, i, j);
+				if (myrank == 0) printf("%d: Failed to allocate %lld bytes for array[%d][%d]\n", myrank, numbytes, i, j);
 		}
 			
 		retval = MPI_File_open (comm, afname+i*FILENAMELEN, MPI_MODE_RDONLY, MPI_INFO_NULL, &afh[i]);
 		if (retval != MPI_SUCCESS) 
-			printf("\nAnalysis file open error %d %s\n", errno, strerror(errno));
+			if (myrank == 0) printf("\nAnalysis file open error %d %s\n", errno, strerror(errno));
 
 	}
 
@@ -207,15 +207,19 @@ void Modalysis::process() {
 
 	 for (aindex=0; aindex<anum; aindex++) {
 
-			//Check if all timesteps processed
-			//if (acurrstep[aindex]+1 == atsteps[aindex]) continue;
+			//Check if all timesteps processed, round robin for all
 			if (current_ts[aindex]+1 == atsteps[aindex]) continue;
 
-			while (check_new_timestep(aindex) != true) sleep(10);  
+			//while (check_new_timestep(aindex) != true) sleep(10);  
+			if (check_new_timestep(aindex) != true) {
+			 	sleep(5); 
+				continue;	//check for the other analysis timesteps
+			} 
 			processTimeStep(aindex, current_ts[aindex]+1);				
 			current_ts[aindex] += atevery[aindex]; 
 
 	 }
+
 	}
 }
 
