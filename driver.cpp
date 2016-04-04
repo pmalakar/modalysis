@@ -9,7 +9,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#ifndef NERSC_HOST
 #include <spi/include/kernel/memory.h>
+#endif
 #include <mpi.h>
 //#include <fftw3.h>
 //#include <fftw3-mpi.h>

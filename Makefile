@@ -1,8 +1,11 @@
-CC=mpixlc
-CXX=mpixlcxx
+CC=cc
+CXX=CC
 
-CFLAGS=-g #-O3 #-pg
-
+ifdef NERSC_HOST
+CFLAGS=-g -O3 -DNERSC_HOST #-pg
+else
+CFLAGS=-g -O3 #-pg
+endif
 SRCS = 	vacf.cpp \
 		msd.cpp \
 		histo.cpp \

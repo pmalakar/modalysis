@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#ifndef NERSC_HOST
 #include <spi/include/kernel/memory.h>
+#endif
 #include "modalysis.h"
 
 void Modalysis::setupPostprocess() {
