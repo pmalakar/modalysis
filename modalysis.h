@@ -91,7 +91,7 @@ class Modalysis
 
 		void compute_vacf(int, double *);
 		void compute_msd(int, double *);
-		void compute_histo(int, int);
+		void compute_histo(int, double *);
 		void compute_fft(int);
 		void compute_fft_1d(int, int, int, double **);
 
