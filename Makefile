@@ -1,5 +1,10 @@
+ifdef NERSC_HOST 
+CC=cc
+CXX=CC
+else
 CC=mpixlc
 CXX=mpixlcxx
+endif
 
 CFLAGS=-g #-O3 #-pg
 

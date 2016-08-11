@@ -9,7 +9,9 @@
 #include <cstdlib>
 #include <mpi.h>
 #include <error.h>
-#include <spi/include/kernel/memory.h>
+#ifndef NERSC_HOST
+//#include <spi/include/kernel/memory.h>
+#endif
 #include "modalysis.h"
 
 Modalysis::Modalysis() {

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
-#include <spi/include/kernel/memory.h>
+//#include <spi/include/kernel/memory.h>
 #include "modalysis.h"
 
 void Modalysis::setupPostprocess() {

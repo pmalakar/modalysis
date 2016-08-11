@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <spi/include/kernel/memory.h>
+//#include <spi/include/kernel/memory.h>
 #include <mpi.h>
 //#include <fftw3.h>
 //#include <fftw3-mpi.h>
