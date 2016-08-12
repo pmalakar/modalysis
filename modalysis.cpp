@@ -10,7 +10,7 @@
 #include <mpi.h>
 #include <error.h>
 #ifndef NERSC_HOST
-//#include <spi/include/kernel/memory.h>
+#include <spi/include/kernel/memory.h>
 #endif
 #include "modalysis.h"
 
