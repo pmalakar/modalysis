@@ -6,6 +6,9 @@ CFLAGS=-g -O3 -DNERSC_HOST #-pg
 else
 CFLAGS=-g -O3 #-pg
 endif
+
+#CFLAGS+=-DDEBUG
+
 SRCS = 	vacf.cpp \
 		msd.cpp \
 		histo.cpp \

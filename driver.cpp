@@ -9,7 +9,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-//#include <spi/include/kernel/memory.h>
+#ifndef NERSC_HOST
+#include <spi/include/kernel/memory.h>
+#endif
 #include <mpi.h>
 //#include <fftw3.h>
 //#include <fftw3-mpi.h>
@@ -34,6 +36,11 @@ int main (int argc, char** argv) {
 		//fftw_mpi_init();
 		MPI_Comm_rank(MPI_COMM_WORLD, &me);
 		MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+#ifdef DEBUG
+		if(me == 0) printf("%d: init\n", me);
+		fflush(stdout);
+#endif
 
 		for(int i = 0; i < argc; i++) {
 
@@ -64,6 +71,10 @@ int main (int argc, char** argv) {
 		Modalysis modalysis;
 
 		modalysis.init(me, nprocs, postprocess, totalAtoms, timesteps);
+
+#ifdef DEBUG
+		printf("%d: calling coanalyze\n", me);
+#endif
 
 		if (postprocess == 0) 
 			modalysis.coanalyze(analysiscfg);
