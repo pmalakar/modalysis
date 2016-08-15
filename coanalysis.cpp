@@ -9,7 +9,6 @@
 #include <time.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include "modalysis.h"
 
@@ -73,11 +72,11 @@ void Modalysis::readConfig(char *analysiscfg)
 	if (MPI_Bcast(aname, anum*ANAMELEN, MPI_CHAR, 0, comm) != MPI_SUCCESS)
 		printf("\nAnalysis name bcast error %d %s\n", errno, strerror(errno));
 
-//#ifdef DEBUG
+#ifdef DEBUG
 	if (myrank < 2)
 	for (i=0; i<anum; i++) 
 		printf("%d %d | %d %d %d %d %s %s\n", myrank, i, adim[i], atevery[i], atsteps[i], acurrstep[i], afname+i*FILENAMELEN, aname+i*ANAMELEN);
-//#endif
+#endif
 
 }
 
@@ -126,18 +125,23 @@ void Modalysis::processTimeStep(int aindex, int n) {
 	mpifo = offset * adim[aindex] * sizeof(double);
 	numelem = adim[aindex] * nlocal;
 
+#ifdef DEBUG
 	if (myrank ==0) {
 		printf("test %lld %lld %lld: %lld\n", nlocal, nPartialSum, nglobal, numelem);
 		printf("Read from %lld for %d analysis [%s]\n", mpifo, aindex, aname+aindex*ANAMELEN);
 	}
+#endif
 
+	double read_time = MPI_Wtime();
 	for (int nidx=n; nidx<nend ; nidx++) 
 		if (MPI_File_read_at_all(afh[aindex], mpifo, array[aindex][nidx], numelem, MPI_DOUBLE, &status) != MPI_SUCCESS)
 			perror("File read error");
+	read_time = MPI_Wtime() - read_time;
+	if (myrank == 0 && n<4) printf("%d Time to read for %s: %lf\n", n, aname+aindex*ANAMELEN, read_time);
 
 #ifdef DEBUG
 	for (int j=0; j<3; j++) 
-		printf("%d array[%d][%d][%d] = %lf\n", myrank, aindex, n, j, array[aindex][n][j]);
+		printf("%d %s array[%d][%d][%d] = %lf\n", myrank, aname+aindex*ANAMELEN, aindex, n, j, array[aindex][n][j]);
 #endif
 
 	//Call analysis functions
@@ -169,8 +173,17 @@ void Modalysis::processTimeStep(int aindex, int n) {
 		if (myrank == 0) printf("%lld Time to compute msd[%d]: %lf\n", nglobal, n, time);
 	}
 
+	else if (strncmp(aname+aindex*ANAMELEN, "histo", 5) == 0)	{
+
+		stime = MPI_Wtime();
+		compute_histo(n, array[aindex][n]);
+			//compute_histo(n, nend, k, array[aindex]);
+		stime = MPI_Wtime() - stime;
+		MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
+		if (myrank == 0) printf("%lld Time to compute histo[%d]: %lf\n", nglobal, n, time);
+	}
+
 	else if (strncmp(aname+aindex*ANAMELEN, "fft", 3) == 0)	{
-		if (myrank == 0) printf("call fft for %s\n", aname+aindex*ANAMELEN);
 
 		stime = MPI_Wtime();
 		for (int k=0; k<nlocal ; k++) 
@@ -200,8 +213,10 @@ void Modalysis::process() {
 		else
 			done[aindex] = false, alldone = false;
 
+#ifdef DEBUG
 		if(myrank < 1) 
 			if (done[aindex]) printf ("done for %d: %d %d\n", aindex, acurrstep[aindex], atsteps[aindex]);
+#endif
 		
 	 }
 
@@ -230,9 +245,9 @@ bool Modalysis::check_new_timestep(int aidx) {
 	bool value = false;
 	
 	if (myrank == 0) {
-//#ifdef DEBUG
+#ifdef DEBUG
 		printf("0 check %s for new timestep: current_ts[%d]=%d acurrstep[%d]=%d\n", configFile, aidx, current_ts[aidx], aidx, acurrstep[aidx]);
-//#endif
+#endif
 		if (configFile == NULL)
 			printf("configFile NULL\n");
 

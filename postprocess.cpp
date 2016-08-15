@@ -140,8 +140,8 @@ void Modalysis::histo_() {
 	double time;
 	double stime = MPI_Wtime();
 	for (int n=0; n<ntimesteps ; n=n+1) { 
-		compute_histo(n, POSITION);	
-		compute_histo(n, VELOCITY);	
+		compute_histo(n, x[n]);	
+		compute_histo(n, v[n]);	
 	}
 	stime = MPI_Wtime() - stime;
 	MPI_Allreduce(&stime, &time, 1, MPI_DOUBLE, MPI_MAX, comm);
