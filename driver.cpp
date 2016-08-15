@@ -37,6 +37,11 @@ int main (int argc, char** argv) {
 		MPI_Comm_rank(MPI_COMM_WORLD, &me);
 		MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
+#ifdef DEBUG
+		if(me == 0) printf("%d: init\n", me);
+		fflush(stdout);
+#endif
+
 		for(int i = 0; i < argc; i++) {
 
      if((strcmp(argv[i], "-a") == 0) || (strcmp(argv[i], "--num_atoms") == 0)) {
@@ -66,6 +71,10 @@ int main (int argc, char** argv) {
 		Modalysis modalysis;
 
 		modalysis.init(me, nprocs, postprocess, totalAtoms, timesteps);
+
+#ifdef DEBUG
+		printf("%d: calling coanalyze\n", me);
+#endif
 
 		if (postprocess == 0) 
 			modalysis.coanalyze(analysiscfg);
