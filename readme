@@ -1,0 +1,11 @@
+This is a parallel C++ analysis code for molecular dynamics simulation output (e.g. miniMD, LAMMPS)
+
+Please refer the paper "Optimal Execution of Co-analysis for Large-scale Molecular Dynamics Simulations, P. Malakar et al., SC 2016" for further details.
+
+
+
+Contact
+-------
+Preeti Malakar
+malakar.preeti@gmail.com
+pmalakar@anl.gov
